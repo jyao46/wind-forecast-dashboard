@@ -4,12 +4,13 @@ from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 from metrics import rmse, cross_correlation, power_curve_similarity
 
 
 pyron_results = pd.read_csv('data/pyron_model_results.csv')
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, "https://use.fontawesome.com/releases/v5.15.4/css/all.css"])
 
 # sidebar filter
 sidebar = dbc.Col([
@@ -17,7 +18,7 @@ sidebar = dbc.Col([
         html.H3('Filter Data', style={'margin-top': '10px'})
     ]),
 
-    dbc.Label('Select Model:', style={'margin-top': '10px'}),
+    dbc.Label('Select Model:', style={'margin-top': '20px'}),
     dcc.Dropdown(
         id='model-dropdown',
         value=None,
@@ -29,14 +30,29 @@ sidebar = dbc.Col([
         clearable=True
     ),
 
-    dbc.Label('Select Date Range:', style={'margin-top': '20px'}),
+    dbc.Label('Select Date Range:', style={'margin-top': '30px'}),
+
+    # dmc.DatePicker(
+    #     id='date-dropdown',
+    #     type='range',
+    #     minDate=pd.to_datetime(pyron_results['datetime'].min()),
+    #     maxDate=pd.to_datetime(pyron_results['datetime'].max()),
+    #     value=[pyron_results['datetime'].min(), pyron_results['datetime'].max()]
+    # )
+
     dcc.DatePickerRange(
         id='date-dropdown',
         min_date_allowed=pyron_results['datetime'].min(),
         max_date_allowed=pyron_results['datetime'].max(),
         start_date=pyron_results['datetime'].min(),
         end_date=pyron_results['datetime'].max()
-    )
+    ),
+
+    # download data button
+    dbc.Button([html.I(className="fas fa-download me-2"), 'Download Data'],
+               id='download-button',
+               color='primary', style={'margin-top': '30px', 'width': '100%'}),
+    dcc.Download(id='download-dataframe-csv')
 
 ], width=3, style={'padding': '20px', 'backgroundColor': '#f8f9fa'})
 
@@ -56,11 +72,11 @@ content = dbc.Col([
                 html.Div([
                     dbc.Label('Data Opacity:'),
                     dcc.Slider(id='opacity-slider', min=0, max=1, step=0.01, value=0.1,
-                               updatemode='drag', marks={i/10: str(i/10) for i in range(11)})
-                ], style={'padding': '20px'})
+                               marks={i/10: str(i/10) for i in range(11)})
+                ], style={'width': '60%', 'padding-left': '80px'})
             ])
         ], width=7),
-        dbc.Col(html.Div(id='metrics-display'), width=5)
+        dbc.Col(html.Div(id='metrics-display'), width=5, style={'padding-left': '50px'})
     ])
 
 ], width=9)
@@ -111,13 +127,23 @@ def update_dashboard(selected_model, start_date, end_date, opacity):
 
 
     # plot graphs
-    time_series_fig = px.line(df, x='datetime', y='power', color='series',
+    time_series_fig = px.line(df, x='datetime', y='power', color='series', height=350,
                               labels={'datetime': 'Date', 'power': 'Power (MW)', 'series': '', 'historical_power': 'Historical Power'},
-                              title=f'Time Series of {model_labels[selected_model]}Historical Power (Date Range)')
+                              title=f'Time Series of {model_labels[selected_model]}Historical Power')
+    time_series_fig.update_layout(
+        title={'font': {'size': 24}, 'x': 0.5},
+        margin={'t': 50},
+        uirevision='0'
+    )
 
-    power_curve_fig = px.scatter(df, x='speed', y='power', color='series', opacity=opacity,
+    power_curve_fig = px.scatter(df, x='speed', y='power', color='series', opacity=opacity, height=400,
                                  labels={'speed': 'Wind Speed (m/s)', 'power': 'Power (MW)', 'series': ''},
                                  title='Power Curve Comparison')
+    power_curve_fig.update_layout(
+        title={'font': {'size': 24}, 'x': 0.45},
+        margin={'t': 50, 'b': 20},
+        uirevision='0'
+    )
 
     # metrics
     if selected_model:
@@ -138,6 +164,31 @@ def update_dashboard(selected_model, start_date, end_date, opacity):
         ])
 
     return time_series_fig, power_curve_fig, metric_div
+
+# download button callback
+@app.callback(
+    Output('download-dataframe-csv', 'data'),
+    Input('download-button', 'n_clicks'),
+    [Input('model-dropdown', 'value'),
+     Input('date-dropdown', 'start_date'),
+     Input('date-dropdown', 'end_date')],
+    prevent_initial_call=True
+)
+def download_data(n_clicks, selected_model, start_date, end_date):
+    # # date filter
+    # mask = (pd.to_datetime(pyron_results['datetime']) >= pd.to_datetime(start_date)) & (pd.to_datetime(pyron_results['datetime']) <= pd.to_datetime(end_date))
+    # filtered = pyron_results.loc[mask]
+
+    # # model filter
+    # if selected_model:
+    #     filtered = filtered[['datetime', 'speed', 'historical_power', selected_model]]
+    # else:
+    #     filtered = filtered[['datetime', 'speed', 'historical_power']]
+
+    # # could customize filename based on filters
+    # return dcc.send_data_frame(filtered.to_csv, 'filtered_data.csv', index=False)
+    return dcc.send_data_frame(pyron_results.to_csv, 'pyron_full_results.csv', index=False)
+
 
 
 if __name__ == '__main__':
