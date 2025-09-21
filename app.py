@@ -49,21 +49,19 @@ content = dbc.Col([
     dbc.Row([
         dbc.Col(dcc.Graph(id='time-series'), width=12)
     ]),
-    # dbc.Row([
-    #     dbc.Col([
-    #         dcc.Graph(id='power-curve'),
-    #         html.Div([
-    #             dbc.Label('Data Opacity:'),
-    #             dcc.Slider(id='opacity-slider', min=0.01, max=1, step=0.01, value=0.1)
-    #         ])
-    #     ], width=7),
-    #     dbc.Col(html.Div(id='metrics-display'), width=5)
-    # ]),
     dbc.Row([
-        dbc.Col(dcc.Graph(id='power-curve'), width=7),
+        dbc.Col([
+            html.Div([
+                dcc.Graph(id='power-curve'),
+                html.Div([
+                    dbc.Label('Data Opacity:'),
+                    dcc.Slider(id='opacity-slider', min=0, max=1, step=0.01, value=0.1,
+                               updatemode='drag', marks={i/10: str(i/10) for i in range(11)})
+                ], style={'padding': '20px'})
+            ])
+        ], width=7),
         dbc.Col(html.Div(id='metrics-display'), width=5)
     ])
-
 
 ], width=9)
 
@@ -83,9 +81,10 @@ app.layout = dbc.Container([
      Output('metrics-display', 'children')],
     [Input('model-dropdown', 'value'),
      Input('date-dropdown', 'start_date'),
-     Input('date-dropdown', 'end_date')]
+     Input('date-dropdown', 'end_date'),
+     Input('opacity-slider', 'value')]
 )
-def update_dashboard(selected_model, start_date, end_date):
+def update_dashboard(selected_model, start_date, end_date, opacity):
     # date filter
     mask = (pd.to_datetime(pyron_results['datetime']) >= pd.to_datetime(start_date)) & (pd.to_datetime(pyron_results['datetime']) <= pd.to_datetime(end_date))
     filtered = pyron_results.loc[mask]
@@ -116,7 +115,7 @@ def update_dashboard(selected_model, start_date, end_date):
                               labels={'datetime': 'Date', 'power': 'Power (MW)', 'series': '', 'historical_power': 'Historical Power'},
                               title=f'Time Series of {model_labels[selected_model]}Historical Power (Date Range)')
 
-    power_curve_fig = px.scatter(df, x='speed', y='power', color='series', opacity=0.05,
+    power_curve_fig = px.scatter(df, x='speed', y='power', color='series', opacity=opacity,
                                  labels={'speed': 'Wind Speed (m/s)', 'power': 'Power (MW)', 'series': ''},
                                  title='Power Curve Comparison')
 
