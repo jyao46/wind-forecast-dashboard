@@ -28,7 +28,7 @@ This is an interactive web dashboard for visualizing and analyzing wind power ge
     pip install -r requirements.txt
     ```
 
-4. Run the Application
+4. Run the application
     ```bash
     python app.py
     ```
