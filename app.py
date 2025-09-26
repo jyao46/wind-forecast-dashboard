@@ -11,6 +11,7 @@ from metrics import rmse, cross_correlation, power_curve_similarity
 pyron_results = pd.read_csv('data/pyron_model_results.csv')
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, "https://use.fontawesome.com/releases/v5.15.4/css/all.css"])
+server = app.server
 
 # sidebar filter
 sidebar = dbc.Col([
@@ -169,12 +170,12 @@ def update_dashboard(selected_model, start_date, end_date, opacity):
 @app.callback(
     Output('download-dataframe-csv', 'data'),
     Input('download-button', 'n_clicks'),
-    [Input('model-dropdown', 'value'),
-     Input('date-dropdown', 'start_date'),
-     Input('date-dropdown', 'end_date')],
+    # [Input('model-dropdown', 'value'),
+    #  Input('date-dropdown', 'start_date'),
+    #  Input('date-dropdown', 'end_date')],
     prevent_initial_call=True
 )
-def download_data(n_clicks, selected_model, start_date, end_date):
+def download_data(n_clicks):
     # # date filter
     # mask = (pd.to_datetime(pyron_results['datetime']) >= pd.to_datetime(start_date)) & (pd.to_datetime(pyron_results['datetime']) <= pd.to_datetime(end_date))
     # filtered = pyron_results.loc[mask]
